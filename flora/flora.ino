@@ -4,6 +4,7 @@
    MIT License
 
    Copyright (c) 2017 Sven Henkel
+   Multiple units reading by Grega Lebar 2018
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +32,7 @@
 #include "config.h"
 
 RTC_DATA_ATTR int bootCount = 0;
+static int differentMACs = sizeof FLORA_ADDR / sizeof FLORA_ADDR[0];
 
 // The remote service we wish to connect to.
 static BLEUUID serviceUUID("00001204-0000-1000-8000-00805f9b34fb");
@@ -40,8 +42,6 @@ static BLEUUID uuid_version_battery("00001a02-0000-1000-8000-00805f9b34fb");
 static BLEUUID uuid_sensor_data("00001a01-0000-1000-8000-00805f9b34fb");
 static BLEUUID uuid_write_mode("00001a00-0000-1000-8000-00805f9b34fb");
 
-static BLEAddress floraAddress(FLORA_ADDR);
-
 static int doConnect = 0;
 static boolean connected = false;
 static BLERemoteCharacteristic* pRemoteCharacteristic;
@@ -50,7 +50,10 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 
-bool getSensorData(BLEAddress pAddress, bool getBattery) {
+bool getSensorData(BLEAddress pAddress, bool getBattery, int floraDevice) {
+
+  String topic = outTopic + FLORA_ADDR[floraDevice] + "/";
+  
   Serial.print("Forming a connection to Flora device at ");
   Serial.println(pAddress.toString().c_str());
 
@@ -110,23 +113,23 @@ bool getSensorData(BLEAddress pAddress, bool getBattery) {
   Serial.print("Temperature: ");
   Serial.println(temp);
   snprintf(buffer, 64, "%f", temp);
-  client.publish(MQTT_TEMPERATURE, buffer);
+  client.publish(setMQTTTopic("temperature", topic), buffer);
   
 
   Serial.print("Moisture: ");
   Serial.println(moisture);
   snprintf(buffer, 64, "%d", moisture);
-  client.publish(MQTT_MOISTURE, buffer);
+  client.publish(setMQTTTopic("moisture", topic), buffer);
 
   Serial.print("Light: ");
   Serial.println(light);
   snprintf(buffer, 64, "%d", light);
-  client.publish(MQTT_LIGHT, buffer);
+  client.publish(setMQTTTopic("light", topic), buffer);
 
   Serial.print("Conductivity: ");
   Serial.println(conductivity);
   snprintf(buffer, 64, "%d", conductivity);
-  client.publish(MQTT_CONDUCTIVITY, buffer);
+  client.publish(setMQTTTopic("conductivity", topic), buffer);
 
   if (getBattery) {
     Serial.println("Trying to retrieve battery level...");
@@ -153,10 +156,11 @@ bool getSensorData(BLEAddress pAddress, bool getBattery) {
     Serial.print("Battery: ");
     Serial.println(battery);
     snprintf(buffer, 64, "%d", battery);
-    client.publish(MQTT_BATTERY, buffer);
+    client.publish(setMQTTTopic("battery", topic), buffer);
   }
 
   pClient->disconnect();
+
 }
 
 void taskDeepSleep( void * parameter )
@@ -194,11 +198,11 @@ void setup() {
   Serial.println("");
   Serial.println("WiFi connected");
 
-  client.setServer(mqtt_server, 1883);
+  client.setServer(MQTT_SERVER, 1883);
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("floraClient")) {
+    if (client.connect(MQTT_CLIENTID, MQTT_USERNAME, MQTT_PASSWORD)) {
       Serial.println("connected");
     } else {
       Serial.print("failed, rc=");
@@ -211,7 +215,12 @@ void setup() {
 
   delay(1000);
 
-  getSensorData(floraAddress, ((bootCount % BATTERY_INTERVAL) == 0));
+  for(int i=0;i<differentMACs;i++){
+    BLEAddress floraAddress(FLORA_ADDR[i]);
+    getSensorData(floraAddress, ((bootCount % BATTERY_INTERVAL) == 0), i);
+    delay(1500);
+  }
+  
   bootCount++;
 } // End of setup.
 
@@ -220,3 +229,12 @@ void setup() {
 void loop() {
   delay(10000);
 } // End of loop
+
+
+char message_buff[150];
+char* setMQTTTopic(char* var, String topicBase) {
+  String myBigArray = "";
+  myBigArray = topicBase + var;
+  myBigArray.toCharArray(message_buff, myBigArray.length() + 1);
+  return message_buff;
+}
