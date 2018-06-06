@@ -28,8 +28,8 @@ Battery level is read every 12th wakeup (configurable via config.h).
 ## Constraints
 
 Some "nice to have" features are not yet implemented or cannot be implemented:
-  - OTA updates: I didn't manage to implement OTA update capabilities due to program size constraints: BLE and WLAN brings the sketch up to 90% of the size limit, so I decided to use the remaining 10% for something more useful than OTA...
-
+  - OTA updates: I didn't manage to implement OTA update capabilities due to program size constraints: BLE and WLAN brings the sketch up to 90% of the size limit
+  
 ## Sketch size issues
 
 The sketch does not fit into the default arduino parition size of around 1.3MB. You'll need to change your default parition table and increase maximum build size to at least 1.6MB.
