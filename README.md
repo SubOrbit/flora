@@ -1,6 +1,6 @@
-## flora
+## Xiaomi mi flora & ESP32
 
-This arduino sketch implements an ESP32 BLE client for XIaomi Mi Flora Plant sensors, pushing the measurements to an MQTT server.
+This arduino sketch implements an ESP32 BLE client for multiple XIaomi Mi Flora Plant sensors, pushing the measurements to an MQTT server.
 
 ## Technical requirements
 
@@ -25,10 +25,6 @@ Software:
 The ESP32 will perform a single connection attempt to the Xiaomi Mi Plant sensors, read the sensor data & push it to the MQTT server. The ESP32 will enter deep sleep mode after 30 seconds (can be configured in config.h) and sleep for one hour (also configurable in config.h), before repeating the exercise...
 Battery level is read every 12th wakeup (configurable via config.h).
 
-## Constraints
-
-Some "nice to have" features are not yet implemented or cannot be implemented:
-  - OTA updates: I didn't manage to implement OTA update capabilities due to program size constraints: BLE and WLAN brings the sketch up to 90% of the size limit
   
 ## Sketch size issues
 
@@ -38,6 +34,7 @@ The sketch does not fit into the default arduino parition size of around 1.3MB. 
 ## Credits
 
 Sven Henkel is the original author of the sketch
+
 Many thanks go to the guys at https://github.com/open-homeautomation/miflora for figuring out the sensor protocol.
 
   
